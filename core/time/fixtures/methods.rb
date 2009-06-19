@@ -20,30 +20,26 @@ def with_timezone(name, offset = nil, daylight_saving_zone = "")
   end
 end
 
+def localtime(seconds, format)
+  guard = SpecGuard.new
+
+  if guard.os?(:linux) || `date --version`.grep(/GNU coreutils/)
+    `LC_ALL=C date -d @#{seconds} +'#{format}'`.chomp
+  elsif guard.os?(:darwin, :bsd)
+    `LC_ALL=C date -r #{seconds} +'#{format}'`.chomp
+  else
+    `LC_ALL=C date -j -f "%s" #{seconds} "+#{format}"`.chomp
+  end
+end
+
 # Returns the given time in the same format as returned by
 # Time.at(seconds).inspect on MRI 1.8
 def localtime_18(seconds)
-  platform_is :os => [:darwin, :bsd] do
-    return `LC_ALL=C date -r #{seconds} +'%a %b %d %H:%M:%S %z %Y'`.chomp
-  end
-
-  platform_is :os => :linux do
-    return `LC_ALL=C date -d @#{seconds} +'%a %b %d %H:%M:%S %z %Y'`.chomp
-  end
-
-  return `LC_ALL=C date -j -f "%s" #{seconds} "+%a %b %d %H:%M:%S %z %Y"`.chomp
+  localtime(seconds, "%a %b %d %H:%M:%S %z %Y")
 end
 
 # Returns the given time in the same format as returned by
 # Time.at(seconds).inspect on MRI 1.9
 def localtime_19(seconds)
-  platform_is :os => [:darwin, :bsd] do
-    return `LC_ALL=C date -r #{seconds} +'%F %H:%M:%S %z'`.chomp
-  end
-
-  platform_is :os => :linux do
-    return `LC_ALL=C date -d @#{seconds} +'%F %H:%M:%S %z'`.chomp
-  end
-
-  return `LC_ALL=C date -j -f "%s" #{seconds} "+%F %H:%M:%S %z"`.chomp
+  localtime(seconds, "%F %H:%M:%S %z")
 end
